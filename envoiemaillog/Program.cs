@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Net;
 using System.Net.Mail;
+using System.Configuration;
+
+
 
 namespace envoiemaillog
 {
@@ -16,21 +14,37 @@ namespace envoiemaillog
             string content = "";
             string P1 = args[0]; //appel du nom de dossier et le stocker dans P1
             string path = args[0];
-            //int position = P1.LastIndexOf("\\");
+
+            var appSettings = ConfigurationManager.AppSettings;
+            string LoginSmtp = appSettings["LoginSMTP"];
+            string PasswordSMTP = appSettings["PasswordSMTP"];
+            string file1 = appSettings["File1"];
+            string file2 = appSettings["File2"];
             P1 = P1.Substring(P1.LastIndexOf("\\") + 1);
 
 
-            FileInfo fi = new FileInfo(@"" + args[0] + "\\LogsOF.txt");// on stock les infos du fichier LogsOF dans la varable fi
-            FileInfo fic = new FileInfo(@"" + args[0] + "\\logtoolsSplit_Bj_Files.txt");
+            FileInfo fi = new FileInfo(@"" + args[0] + "\\" + file1);// on stock les infos du fichier LogsOF dans la varable fi
+            FileInfo fic = new FileInfo(@"" + args[0] + "\\" + file2);
 
             DateTime a = fi.LastWriteTime;//la variable a contient l'heure de modfif du fichier LogsOF
             DateTime b = fic.LastWriteTime;
 
-            string[] tab = File.ReadAllLines(@"modif.txt");// On stock dans tab ce que contient le doc.txt
+            //Console.WriteLine("fi : {0} , Fic :  {1}", a, b);
+            //Console.ReadKey();
 
+            if (!File.Exists(@"" + args[0] + "\\modif.txt"))
+            {
+             
+                StreamWriter file = new StreamWriter(@"" + args[0] + "\\modif.txt");
+
+                file.Close();
+            }
+
+           
+           string[] tab = File.ReadAllLines(@"" + args[0] + "\\modif.txt");// On stock dans tab ce que contient le doc.txt
             string x;// création d'une variable qui nous permet de stocker la dernière heure de modfication d'un des deux fichiers
 
-
+             
 
 
             if (a < b)
@@ -48,17 +62,17 @@ namespace envoiemaillog
             for (i = 0; i < tab.Length; i++)
             {
                 string val = tab[i];
-                string taille = val.Substring(val.LastIndexOf(";") + 1);
+                string dossier = val.Substring(val.LastIndexOf(";") + 1);
 
 
-                if (P1 == taille)
+                if (P1 == dossier)
                 {
                     content = val.Substring(0, val.LastIndexOf(";"));
 
 
                     if (x != content)
                     {
-                        tab[i] = (x + ";" + taille);
+                        tab[i] = (x + ";" + dossier);
 
 
                     }
@@ -80,27 +94,28 @@ namespace envoiemaillog
 
 
 
-                File.Delete(@"modif.txt");
-                File.WriteAllLines(@"modif.txt", tab);// si l'heure de modif d'un des deux fichiers est différente de celle qu'on a sauvegardé alors on la remplace à la place de celle que l'on avait sauvegardé dans le fichier modifopenflux.txt
+                //File.Delete(@"" + args[0] + "\\modif.txt");
+                File.WriteAllLines(@"" + args[0] + "\\modif.txt", tab);// si l'heure de modif d'un des deux fichiers est différente de celle qu'on a sauvegardé alors on la remplace à la place de celle que l'on avait sauvegardé dans le fichier modifopenflux.txt
+
                 try// envoie du mail
                 {
                     MailMessage email = new MailMessage();
-                    email.To.Add("skallyx19@gmail.com");
+                    email.To.Add("ochassing@gmail.com");
 
                     //email.CC.Add("ochassing@gmail.com");
-                    email.From = new MailAddress("skallyx19@gmail.com");
-                    email.Subject = "Test";
-                    email.Body = "coucou ça marche";
+                    email.From = new MailAddress("ochassing@gmail.com");
+                    email.Subject = "Les Logs Openflux SAGE CSI ont été modifiés";
+                    email.Body = "Voici les fichiers concernés";
                     System.Net.Mail.Attachment attachment;
                     System.Net.Mail.Attachment attachment2;
-                    attachment = new System.Net.Mail.Attachment(args[0] + "\\LogsOF.txt");
-                    attachment2 = new System.Net.Mail.Attachment(args[0] + "\\logtoolsSplit_Bj_Files.txt");
+                    attachment = new System.Net.Mail.Attachment(args[0] + "\\"+ file1);
+                    attachment2 = new System.Net.Mail.Attachment(args[0] + "\\" +file2);
                     email.Attachments.Add(attachment);
                     email.Attachments.Add(attachment2);
                     email.IsBodyHtml = true;
                     SmtpClient smtp = new SmtpClient();
                     smtp.Host = "smtp.gmail.com";
-                    smtp.Credentials = new System.Net.NetworkCredential(args[1], args[2]);
+                    smtp.Credentials = new System.Net.NetworkCredential(LoginSmtp, PasswordSMTP);
                     smtp.Port = 587;
 
                     smtp.EnableSsl = true;
@@ -109,6 +124,8 @@ namespace envoiemaillog
                 catch (Exception ex)
                 {
                     string[] contents = { ("Exception in sendEmail:" + ex.Message) };
+                    //Console.WriteLine(contents[0]);
+                    //Console.ReadKey();
                 }
             }
         }
