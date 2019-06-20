@@ -100,7 +100,7 @@ namespace envoiemaillog
                     email.IsBodyHtml = true;
                     SmtpClient smtp = new SmtpClient();
                     smtp.Host = "smtp.gmail.com";
-                    smtp.Credentials = new System.Net.NetworkCredential("", "");
+                    smtp.Credentials = new System.Net.NetworkCredential(args[1], args[2]);
                     smtp.Port = 587;
 
                     smtp.EnableSsl = true;
